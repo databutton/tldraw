@@ -124,6 +124,7 @@ export function Tldraw({
   onCommand,
   onChangePage,
   onAssetCreate,
+  fetchDataForAsset,
   onAssetDelete,
   onExport,
 }: TldrawProps) {
@@ -150,6 +151,7 @@ export function Tldraw({
       onChangePage,
       onAssetDelete,
       onAssetCreate,
+      fetchDataForAsset,
     })
     return app
   })
@@ -176,6 +178,7 @@ export function Tldraw({
       onChangePage,
       onAssetDelete,
       onAssetCreate,
+      fetchDataForAsset,
       onExport,
     })
     setSId(id)
@@ -231,6 +234,7 @@ export function Tldraw({
       onChangePage,
       onAssetDelete,
       onAssetCreate,
+      fetchDataForAsset,
       onExport,
     }
   }, [
@@ -252,6 +256,7 @@ export function Tldraw({
     onChangePage,
     onAssetDelete,
     onAssetCreate,
+    fetchDataForAsset,
     onExport,
   ])
 
