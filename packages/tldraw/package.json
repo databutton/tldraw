@@ -1,8 +1,8 @@
 {
   "name": "@databutton/tldraw",
-  "version": "1.7.0-alpha-1",
+  "version": "0.0.1-alpha-1",
   "description": "A tiny little drawing app (editor)",
-  "author": "@steveruizok",
+  "author": "@databutton",
   "repository": {
     "type": "git",
     "url": "https://github.com/databutton/tldraw.git"

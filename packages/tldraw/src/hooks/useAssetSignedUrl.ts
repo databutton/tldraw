@@ -24,6 +24,8 @@ export function useAssetSignedUrl(asset: TDAssetWithData) {
   const app = useTldrawApp()
   if (app.callbacks.fetchDataForAsset) {
   }
-  const { data, error } = useSWR(asset.storageKey, app.callbacks.fetchDataForAsset!)
+  const { data, error } = useSWR(asset.storageKey, app.callbacks.fetchDataForAsset!, {
+    refreshInterval: 0,
+  })
   return { data: data?.signedUrl, error }
 }
