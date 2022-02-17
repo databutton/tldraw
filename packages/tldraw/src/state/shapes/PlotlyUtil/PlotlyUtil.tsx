@@ -93,21 +93,21 @@ export class PlotlyUtil extends TDShapeUtil<T, E> {
 
       const interactive = React.useMemo(() => activeTool === 'select', [activeTool])
 
-      const Plotly: typeof PlotlyType = React.useMemo(() => {
+      const [Plotly, setPlotly] = React.useState<typeof PlotlyType>()
+      React.useEffect(() => {
         if (typeof window !== 'undefined') {
-          return require('plotly.js-dist-min')
+          import('plotly.js-dist-min').then((def) => setPlotly(def.default))
         }
-        return undefined
-      }, [window])
+      })
 
       React.useLayoutEffect(() => {
-        if (rPlot.current && layout) {
+        if (rPlot.current && layout && Plotly) {
           Plotly.react(rPlot.current, data.data, layout, {
             staticPlot: !interactive,
             displayModeBar: false,
           })
         }
-      }, [layout, rPlot, interactive])
+      }, [Plotly, layout, rPlot, interactive])
 
       React.useLayoutEffect(() => {
         const wrapper = rWrapper.current
@@ -118,7 +118,7 @@ export class PlotlyUtil extends TDShapeUtil<T, E> {
       }, [size])
 
       React.useEffect(() => {
-        if (data && !error) {
+        if (data && !error && Plotly) {
           if (rPlot.current) {
             setInitialized(false)
             Plotly.newPlot(
@@ -137,7 +137,7 @@ export class PlotlyUtil extends TDShapeUtil<T, E> {
           return
         }
         return
-      }, [data, error, rPlot])
+      }, [data, error, rPlot, Plotly])
 
       return (
         <HTMLContainer ref={ref}>
