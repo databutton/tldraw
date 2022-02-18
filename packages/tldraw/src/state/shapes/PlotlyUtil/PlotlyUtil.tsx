@@ -118,9 +118,8 @@ export class PlotlyUtil extends TDShapeUtil<T, E> {
       }, [size])
 
       React.useEffect(() => {
-        if (data && !error && Plotly) {
+        if (data && !error && Plotly && !initialized) {
           if (rPlot.current) {
-            setInitialized(false)
             Plotly.newPlot(
               rPlot.current,
               data.data,
@@ -137,7 +136,7 @@ export class PlotlyUtil extends TDShapeUtil<T, E> {
           return
         }
         return
-      }, [data, error, rPlot, Plotly])
+      }, [data, error, rPlot, Plotly, initialized])
 
       return (
         <HTMLContainer ref={ref}>
