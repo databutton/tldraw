@@ -8,9 +8,8 @@ export const TldrawContext = React.createContext<TldrawApp>({} as TldrawApp)
 
 export function useAssetSignedUrl(asset: TDAssetWithData) {
   const app = useTldrawApp()
-
   const { data, error } = useSWR(
-    asset.storageKey ? asset.storageKey : undefined,
+    asset.storageKey && asset.storageKey.length > 0 ? asset : undefined,
     app.callbacks.fetchDataForAsset!,
     {
       refreshInterval: 0,
