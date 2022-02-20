@@ -74,7 +74,12 @@ export class PlotlyUtil extends TDShapeUtil<T, E> {
       const rPlot = React.useRef<HTMLDivElement>(null)
       const rPlotly = React.useRef<Plotly.PlotlyHTMLElement>()
       const { data: signedUrl, error: signedUrlError } = useAssetSignedUrl(asset as TDPlotlyAsset)
-      const { data, error } = useSWR(signedUrl, this.dataFetcher, { refreshInterval: 5 })
+      const { data, error } = useSWR(signedUrl, this.dataFetcher, {
+        refreshInterval: 0,
+        revalidateIfStale: false,
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false,
+      })
       const app = useTldrawApp()
 
       const [initialized, setInitialized] = React.useState<boolean>(false)

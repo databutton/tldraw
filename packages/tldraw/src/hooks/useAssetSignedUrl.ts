@@ -9,6 +9,9 @@ export function useAssetSignedUrl(asset: TDAssetWithData) {
     app.callbacks.fetchDataForAsset!,
     {
       refreshInterval: 0,
+      revalidateIfStale: false,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
     }
   )
   return { data: data?.signedUrl, error }

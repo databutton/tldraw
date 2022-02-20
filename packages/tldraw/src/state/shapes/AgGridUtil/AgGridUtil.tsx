@@ -72,7 +72,12 @@ export class AgGridUtil extends TDShapeUtil<T, E> {
 
       const rWrapper = React.useRef<HTMLDivElement>(null)
       const { data: signedUrl, error: signedUrlError } = useAssetSignedUrl(asset as TDPlotlyAsset)
-      const { data, error } = useSWR(signedUrl, this.dataFetcher, { refreshInterval: 0 })
+      const { data, error } = useSWR(signedUrl, this.dataFetcher, {
+        refreshInterval: 0,
+        revalidateIfStale: false,
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false,
+      })
       const app = useTldrawApp()
 
       const activeTool = app.useStore((s) => s.appState.activeTool)
