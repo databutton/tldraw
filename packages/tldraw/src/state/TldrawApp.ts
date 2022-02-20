@@ -45,6 +45,7 @@ import {
   ArrowShape,
   TDImageAsset,
   TDAssetWithData,
+  TDVideoAsset,
 } from '~types'
 import {
   migrate,
@@ -3269,7 +3270,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     if (this.selectedIds.length !== 1) return
     const shape = this.getShape(this.selectedIds[0])
     if (shape.type === TDShapeType.Image || shape.type === TDShapeType.Video) {
-      const asset = this.document.assets[shape.assetId]
+      const asset = this.document.assets[shape.assetId] as TDImageAsset | TDVideoAsset
       const util = TLDR.getShapeUtil(shape)
       const centerA = util.getCenter(shape)
       const centerB = util.getCenter({ ...shape, size: asset.size })

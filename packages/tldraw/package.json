@@ -52,6 +52,8 @@
     "@tldraw/core": "^1.8.0",
     "@tldraw/intersect": "^1.7.1",
     "@tldraw/vec": "^1.7.0",
+    "ag-grid-community": "^27.0.1",
+    "ag-grid-react": "^27.0.1",
     "idb-keyval": "^6.1.0",
     "perfect-freehand": "^1.0.16",
     "plotly.js-dist-min": "^2.9.0",
