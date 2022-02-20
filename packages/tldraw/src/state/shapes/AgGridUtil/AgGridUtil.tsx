@@ -97,6 +97,10 @@ export class AgGridUtil extends TDShapeUtil<T, E> {
         if (!data) {
           return {}
         }
+        // Make sure data has the right shape
+        if (!Array.isArray(data)) {
+          return {}
+        }
         // this isn't really random, hihi
         const randomSample = data[0] || {}
         const columnDefs = Object.keys(randomSample).map((key) => ({
