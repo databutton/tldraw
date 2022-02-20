@@ -1,0 +1,28 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`AGGrid shape Creates a shape: aggrid 1`] = `
+Object {
+  "assetId": "assetId",
+  "childIndex": 1,
+  "id": "aggrid",
+  "name": "AgGrid",
+  "parentId": "page",
+  "point": Array [
+    0,
+    0,
+  ],
+  "rotation": 0,
+  "size": Array [
+    1,
+    1,
+  ],
+  "style": Object {
+    "color": "black",
+    "dash": "draw",
+    "isFilled": true,
+    "scale": 1,
+    "size": "small",
+  },
+  "type": "aggrid",
+}
+`;
