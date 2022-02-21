@@ -2890,8 +2890,9 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     let src: string | ArrayBuffer | null
 
     try {
+      let assetId: string = Utils.uniqueId()
       if (this.callbacks.onAssetCreate) {
-        const result = await this.callbacks.onAssetCreate(file, id)
+        const result = await this.callbacks.onAssetCreate(file, assetId)
         if (!result) throw Error('Asset creation callback returned false')
         src = result
       } else {
@@ -2902,9 +2903,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         const match = Object.values(this.document.assets).find(
           (asset) => asset.type === assetType && asset.src === src
         )
-        let assetId: string
         if (!match) {
-          assetId = Utils.uniqueId()
           const asset = {
             id: assetId,
             type: assetType,

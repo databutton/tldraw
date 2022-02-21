@@ -501,13 +501,12 @@ export interface TDVideoAsset extends TLAsset {
 
 export interface TDPlotlyAsset extends TLAsset {
   type: TDAssetType.Plotly
-  storageKey: string
   size: number[]
 }
 
 export interface TDDataframeAsset extends TLAsset {
   type: TDAssetType.Dataframe
-  storageKey: string
+  size: number[]
 }
 
 export type TDAsset = TDImageAsset | TDVideoAsset | TDPlotlyAsset | TDDataframeAsset

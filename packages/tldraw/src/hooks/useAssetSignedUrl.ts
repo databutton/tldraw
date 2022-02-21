@@ -4,15 +4,11 @@ import { useTldrawApp } from './useTldrawApp'
 
 export function useAssetSignedUrl(asset: TDAssetWithData) {
   const app = useTldrawApp()
-  const { data, error } = useSWR(
-    asset.storageKey && asset.storageKey.length > 0 ? asset : undefined,
-    app.callbacks.fetchDataForAsset!,
-    {
-      refreshInterval: 0,
-      revalidateIfStale: false,
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    }
-  )
+  const { data, error } = useSWR(asset ? asset : undefined, app.callbacks.fetchDataForAsset!, {
+    refreshInterval: 0,
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  })
   return { data: data?.signedUrl, error }
 }

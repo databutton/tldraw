@@ -10,6 +10,8 @@ import {
   transformSingleRectangle,
 } from '~state/shapes/shared'
 import { styled } from '@stitches/react'
+import { useAssetSignedUrl } from '~hooks/useAssetSignedUrl'
+import useSWR from 'swr'
 
 type T = ImageShape
 type E = HTMLDivElement
@@ -44,11 +46,13 @@ export class ImageUtil extends TDShapeUtil<T, E> {
   }
 
   Component = TDShapeUtil.Component<T, E, TDMeta>(
-    ({ shape, asset = { src: '' }, isBinding, isGhost, meta, events, onShapeChange }, ref) => {
+    ({ shape, asset, isBinding, isGhost, meta, events, onShapeChange }, ref) => {
       const { size, style } = shape
 
       const rImage = React.useRef<HTMLImageElement>(null)
       const rWrapper = React.useRef<HTMLDivElement>(null)
+
+      const { data: signedUrl, error: signedUrlError } = useAssetSignedUrl(asset as any)
 
       React.useLayoutEffect(() => {
         const wrapper = rWrapper.current
@@ -82,7 +86,7 @@ export class ImageUtil extends TDShapeUtil<T, E> {
             <ImageElement
               id={shape.id + '_image'}
               ref={rImage}
-              src={(asset as TDImageAsset).src}
+              src={signedUrl}
               alt="tl_image_asset"
               draggable={false}
               // onLoad={onImageLoad}

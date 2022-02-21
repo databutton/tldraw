@@ -57,15 +57,7 @@ export class PlotlyUtil extends TDShapeUtil<T, E> {
 
   Component = TDShapeUtil.Component<T, E, TDMeta>(
     (
-      {
-        shape,
-        asset = { storageKey: '' } as TDPlotlyAsset,
-        isBinding,
-        isGhost,
-        meta,
-        events,
-        onShapeChange,
-      },
+      { shape, asset = {} as TDPlotlyAsset, isBinding, isGhost, meta, events, onShapeChange },
       ref
     ) => {
       const { size, style } = shape
