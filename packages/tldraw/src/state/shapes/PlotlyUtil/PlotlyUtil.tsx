@@ -1,38 +1,48 @@
+import { styled } from '@stitches/react'
+import { HTMLContainer, Utils } from '@tldraw/core'
+// import Plotly from 'plotly.js-dist-min'
 import * as React from 'react'
-import { Utils, HTMLContainer } from '@tldraw/core'
-import { TDShapeType, TDMeta, ImageShape, TDImageAsset } from '~types'
+import useSWR from 'swr'
+import DraggerButton from '~components/DraggerButton/DraggerButton'
 import { GHOSTED_OPACITY } from '~constants'
-import { TDShapeUtil } from '../TDShapeUtil'
+import { useTldrawApp } from '~hooks'
+import { useAssetSignedUrl } from '~hooks/useAssetSignedUrl'
 import {
   defaultStyle,
   getBoundsRectangle,
   transformRectangle,
   transformSingleRectangle,
 } from '~state/shapes/shared'
-import { styled } from '@stitches/react'
-import { useAssetSignedUrl } from '~hooks/useAssetSignedUrl'
-import useSWR from 'swr'
+import { PlotlyShape, TDMeta, TDPlotlyAsset, TDShapeType } from '~types'
+import { TDShapeUtil } from '../TDShapeUtil'
+import type PlotlyType from 'plotly.js-dist-min'
 
-type T = ImageShape
+type T = PlotlyShape
 type E = HTMLDivElement
 
-export class ImageUtil extends TDShapeUtil<T, E> {
-  type = TDShapeType.Image as const
+export class PlotlyUtil extends TDShapeUtil<T, E> {
+  type = TDShapeType.Plotly as const
 
   canBind = true
 
-  canClone = true
+  canClone = false
 
-  isAspectRatioLocked = true
+  isAspectRatioLocked = false
 
   showCloneHandles = true
+
+  dataFetcher = async (signedUrl: string) => {
+    const dataResponse = await fetch(signedUrl)
+    const data = await dataResponse.json()
+    return data
+  }
 
   getShape = (props: Partial<T>): T => {
     return Utils.deepMerge<T>(
       {
-        id: 'image',
-        type: TDShapeType.Image,
-        name: 'Image',
+        id: 'plotly',
+        type: TDShapeType.Plotly,
+        name: 'Plotly',
         parentId: 'page',
         childIndex: 1,
         point: [0, 0],
@@ -46,13 +56,54 @@ export class ImageUtil extends TDShapeUtil<T, E> {
   }
 
   Component = TDShapeUtil.Component<T, E, TDMeta>(
-    ({ shape, asset, isBinding, isGhost, meta, events, onShapeChange }, ref) => {
+    (
+      { shape, asset = {} as TDPlotlyAsset, isBinding, isGhost, meta, events, onShapeChange },
+      ref
+    ) => {
       const { size, style } = shape
 
-      const rImage = React.useRef<HTMLImageElement>(null)
       const rWrapper = React.useRef<HTMLDivElement>(null)
+      const rPlot = React.useRef<HTMLDivElement>(null)
+      const rPlotly = React.useRef<Plotly.PlotlyHTMLElement>()
+      const { data: signedUrl, error: signedUrlError } = useAssetSignedUrl(asset as TDPlotlyAsset)
+      const { data, error } = useSWR(signedUrl, this.dataFetcher, {
+        refreshInterval: 0,
+        revalidateIfStale: false,
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false,
+      })
+      const app = useTldrawApp()
 
-      const { data: signedUrl, error: signedUrlError } = useAssetSignedUrl(asset as any)
+      const [initialized, setInitialized] = React.useState<boolean>(false)
+      const activeTool = app.useStore((s) => s.appState.activeTool)
+
+      const layout = React.useMemo(() => {
+        if (size && data && initialized) {
+          return {
+            ...data.layout,
+            width: size[0],
+            height: size[1],
+          }
+        }
+      }, [size, data, rPlot, initialized])
+
+      const interactive = React.useMemo(() => activeTool === 'select', [activeTool])
+
+      const [Plotly, setPlotly] = React.useState<typeof PlotlyType>()
+      React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+          import('plotly.js-dist-min').then((def) => setPlotly(def.default))
+        }
+      })
+
+      React.useLayoutEffect(() => {
+        if (rPlot.current && layout && Plotly) {
+          Plotly.react(rPlot.current, data.data, layout, {
+            staticPlot: !interactive,
+            displayModeBar: false,
+          })
+        }
+      }, [Plotly, layout, rPlot, interactive])
 
       React.useLayoutEffect(() => {
         const wrapper = rWrapper.current
@@ -62,8 +113,32 @@ export class ImageUtil extends TDShapeUtil<T, E> {
         wrapper.style.height = `${height}px`
       }, [size])
 
+      React.useEffect(() => {
+        if (data && !error && Plotly && !initialized) {
+          if (rPlot.current) {
+            Plotly.newPlot(
+              rPlot.current,
+              data.data,
+              {
+                ...data.layout,
+              },
+              { editable: false, staticPlot: true, displayModeBar: false }
+            ).then((plot) => {
+              rPlotly.current = plot
+              setInitialized(true)
+            })
+            return () => {}
+          }
+          return
+        }
+        return
+      }, [data, error, rPlot, Plotly, initialized])
+
       return (
-        <HTMLContainer ref={ref} {...events}>
+        <HTMLContainer ref={ref}>
+          <DraggerButton
+            events={{ onPointerDown: events.onPointerDown, onPointerUp: events.onPointerUp }}
+          />
           {isBinding && (
             <div
               className="tl-binding-indicator"
@@ -83,14 +158,7 @@ export class ImageUtil extends TDShapeUtil<T, E> {
             isFilled={style.isFilled}
             isGhost={isGhost}
           >
-            <ImageElement
-              id={shape.id + '_image'}
-              ref={rImage}
-              src={signedUrl}
-              alt="tl_image_asset"
-              draggable={false}
-              // onLoad={onImageLoad}
-            />
+            <StyledPlot ref={rPlot} />
           </Wrapper>
         </HTMLContainer>
       )
@@ -118,15 +186,6 @@ export class ImageUtil extends TDShapeUtil<T, E> {
   transform = transformRectangle
 
   transformSingle = transformSingleRectangle
-
-  getSvgElement = (shape: ImageShape) => {
-    const bounds = this.getBounds(shape)
-    const elm = document.createElementNS('http://www.w3.org/2000/svg', 'image')
-    elm.setAttribute('width', `${bounds.width}`)
-    elm.setAttribute('height', `${bounds.height}`)
-    elm.setAttribute('xmlns:xlink', `http://www.w3.org/1999/xlink`)
-    return elm
-  }
 }
 
 const Wrapper = styled('div', {
@@ -179,7 +238,7 @@ const Wrapper = styled('div', {
   ],
 })
 
-const ImageElement = styled('img', {
+const StyledPlot = styled('div', {
   position: 'absolute',
   top: 0,
   left: 0,
@@ -187,8 +246,4 @@ const ImageElement = styled('img', {
   height: '100%',
   maxWidth: '100%',
   minWidth: '100%',
-  pointerEvents: 'none',
-  objectFit: 'cover',
-  userSelect: 'none',
-  borderRadius: 2,
 })

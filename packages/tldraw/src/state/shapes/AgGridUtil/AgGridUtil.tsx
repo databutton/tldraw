@@ -1,38 +1,48 @@
-import * as React from 'react'
-import { Utils, HTMLContainer } from '@tldraw/core'
-import { TDShapeType, TDMeta, ImageShape, TDImageAsset } from '~types'
+import { styled } from '@stitches/react'
+import { HTMLContainer, Utils } from '@tldraw/core'
+import { AgGridReact } from 'ag-grid-react'
+import React from 'react'
+// import Plotly from 'plotly.js-dist-min'
+import useSWR from 'swr'
+import DraggerButton from '~components/DraggerButton/DraggerButton'
 import { GHOSTED_OPACITY } from '~constants'
-import { TDShapeUtil } from '../TDShapeUtil'
+import { useTldrawApp } from '~hooks'
+import { useAssetSignedUrl } from '~hooks/useAssetSignedUrl'
 import {
   defaultStyle,
   getBoundsRectangle,
   transformRectangle,
   transformSingleRectangle,
 } from '~state/shapes/shared'
-import { styled } from '@stitches/react'
-import { useAssetSignedUrl } from '~hooks/useAssetSignedUrl'
-import useSWR from 'swr'
+import { AgGridShape, TDMeta, TDPlotlyAsset, TDShapeType } from '~types'
+import { TDShapeUtil } from '../TDShapeUtil'
 
-type T = ImageShape
+type T = AgGridShape
 type E = HTMLDivElement
 
-export class ImageUtil extends TDShapeUtil<T, E> {
-  type = TDShapeType.Image as const
+export class AgGridUtil extends TDShapeUtil<T, E> {
+  type = TDShapeType.AgGrid as const
 
   canBind = true
 
-  canClone = true
+  canClone = false
 
-  isAspectRatioLocked = true
+  isAspectRatioLocked = false
 
   showCloneHandles = true
+
+  dataFetcher = async (signedUrl: string) => {
+    const dataResponse = await fetch(signedUrl)
+    const data = await dataResponse.json()
+    return data
+  }
 
   getShape = (props: Partial<T>): T => {
     return Utils.deepMerge<T>(
       {
-        id: 'image',
-        type: TDShapeType.Image,
-        name: 'Image',
+        id: 'aggrid',
+        type: TDShapeType.AgGrid,
+        name: 'AgGrid',
         parentId: 'page',
         childIndex: 1,
         point: [0, 0],
@@ -46,13 +56,26 @@ export class ImageUtil extends TDShapeUtil<T, E> {
   }
 
   Component = TDShapeUtil.Component<T, E, TDMeta>(
-    ({ shape, asset, isBinding, isGhost, meta, events, onShapeChange }, ref) => {
+    (
+      { shape, asset = {} as TDPlotlyAsset, isBinding, isGhost, meta, events, onShapeChange },
+      ref
+    ) => {
       const { size, style } = shape
 
-      const rImage = React.useRef<HTMLImageElement>(null)
       const rWrapper = React.useRef<HTMLDivElement>(null)
+      const { data: signedUrl, error: signedUrlError } = useAssetSignedUrl(asset as TDPlotlyAsset)
+      const { data, error } = useSWR(signedUrl, this.dataFetcher, {
+        refreshInterval: 0,
+        revalidateIfStale: false,
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false,
+      })
+      const app = useTldrawApp()
 
-      const { data: signedUrl, error: signedUrlError } = useAssetSignedUrl(asset as any)
+      const activeTool = app.useStore((s) => s.appState.activeTool)
+
+      // @todo: fix interaction model
+      const interactive = React.useMemo(() => activeTool === 'select', [activeTool])
 
       React.useLayoutEffect(() => {
         const wrapper = rWrapper.current
@@ -62,8 +85,30 @@ export class ImageUtil extends TDShapeUtil<T, E> {
         wrapper.style.height = `${height}px`
       }, [size])
 
+      const { rowData = [], columnDefs = [] } = React.useMemo(() => {
+        if (!data) {
+          return {}
+        }
+        // Make sure data has the right shape
+        if (!Array.isArray(data)) {
+          return {}
+        }
+        // this isn't really random, hihi
+        const randomSample = data[0] || {}
+        const columnDefs = Object.keys(randomSample).map((key) => ({
+          field: key,
+        }))
+        return {
+          rowData: data,
+          columnDefs: columnDefs,
+        }
+      }, [data])
+
       return (
-        <HTMLContainer ref={ref} {...events}>
+        <HTMLContainer ref={ref}>
+          <DraggerButton
+            events={{ onPointerDown: events.onPointerDown, onPointerUp: events.onPointerUp }}
+          />
           {isBinding && (
             <div
               className="tl-binding-indicator"
@@ -79,18 +124,13 @@ export class ImageUtil extends TDShapeUtil<T, E> {
           )}
           <Wrapper
             ref={rWrapper}
-            isDarkMode={meta.isDarkMode} //
+            isDarkMode={meta.isDarkMode}
             isFilled={style.isFilled}
             isGhost={isGhost}
           >
-            <ImageElement
-              id={shape.id + '_image'}
-              ref={rImage}
-              src={signedUrl}
-              alt="tl_image_asset"
-              draggable={false}
-              // onLoad={onImageLoad}
-            />
+            <div className="ag-theme-alpine" style={{ height: '100%', width: '100%' }}>
+              <AgGridReact rowData={rowData} columnDefs={columnDefs}></AgGridReact>
+            </div>
           </Wrapper>
         </HTMLContainer>
       )
@@ -118,15 +158,6 @@ export class ImageUtil extends TDShapeUtil<T, E> {
   transform = transformRectangle
 
   transformSingle = transformSingleRectangle
-
-  getSvgElement = (shape: ImageShape) => {
-    const bounds = this.getBounds(shape)
-    const elm = document.createElementNS('http://www.w3.org/2000/svg', 'image')
-    elm.setAttribute('width', `${bounds.width}`)
-    elm.setAttribute('height', `${bounds.height}`)
-    elm.setAttribute('xmlns:xlink', `http://www.w3.org/1999/xlink`)
-    return elm
-  }
 }
 
 const Wrapper = styled('div', {
@@ -177,18 +208,4 @@ const Wrapper = styled('div', {
       },
     },
   ],
-})
-
-const ImageElement = styled('img', {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  width: '100%',
-  height: '100%',
-  maxWidth: '100%',
-  minWidth: '100%',
-  pointerEvents: 'none',
-  objectFit: 'cover',
-  userSelect: 'none',
-  borderRadius: 2,
 })

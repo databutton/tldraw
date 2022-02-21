@@ -78,6 +78,9 @@
   },
   "packageManager": "yarn@1.22.17",
   "dependencies": {
-    "@changesets/cli": "^2.20.0"
+    "@changesets/cli": "^2.20.0",
+    "@tldraw/tldraw": "^1.8.0",
+    "ag-grid-community": "^27.0.1",
+    "ag-grid-react": "^27.0.1"
   }
 }

@@ -15,6 +15,7 @@ import {
   Utils,
   TLBounds,
   TLDropEventHandler,
+  TLAsset,
 } from '@tldraw/core'
 import {
   FlipType,
@@ -42,6 +43,9 @@ import {
   TDExport,
   ImageShape,
   ArrowShape,
+  TDImageAsset,
+  TDAssetWithData,
+  TDVideoAsset,
 } from '~types'
 import {
   migrate,
@@ -160,6 +164,10 @@ export interface TDCallbacks {
    * (optional) A callback to run when an asset will be created. Should return the value for the image/video's `src` property.
    */
   onAssetCreate?: (file: File, id: string) => Promise<string | false>
+  /**
+   * (optional) A callback to run when a custom component needs data. This returns a signed url where the component can fetch the data and transform it as needed.
+   */
+  fetchDataForAsset?: (asset: TDAssetWithData) => Promise<{ signedUrl: string }>
   /**
    * (optional) A callback to run when the user exports their page or selection.
    */
@@ -1892,7 +1900,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
       // If the element is an image, set the asset src as the xlinkhref
       if (shape.type === TDShapeType.Image) {
-        elm.setAttribute('xlink:href', this.document.assets[shape.assetId].src)
+        elm.setAttribute('xlink:href', (this.document.assets[shape.assetId] as TDImageAsset).src)
       } else if (shape.type === TDShapeType.Video) {
         elm.setAttribute('xlink:href', this.serializeVideo(shape.id))
       }
@@ -2882,8 +2890,9 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     let src: string | ArrayBuffer | null
 
     try {
+      let assetId: string = Utils.uniqueId()
       if (this.callbacks.onAssetCreate) {
-        const result = await this.callbacks.onAssetCreate(file, id)
+        const result = await this.callbacks.onAssetCreate(file, assetId)
         if (!result) throw Error('Asset creation callback returned false')
         src = result
       } else {
@@ -2894,9 +2903,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         const match = Object.values(this.document.assets).find(
           (asset) => asset.type === assetType && asset.src === src
         )
-        let assetId: string
         if (!match) {
-          assetId = Utils.uniqueId()
           const asset = {
             id: assetId,
             type: assetType,
@@ -3262,7 +3269,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     if (this.selectedIds.length !== 1) return
     const shape = this.getShape(this.selectedIds[0])
     if (shape.type === TDShapeType.Image || shape.type === TDShapeType.Video) {
-      const asset = this.document.assets[shape.assetId]
+      const asset = this.document.assets[shape.assetId] as TDImageAsset | TDVideoAsset
       const util = TLDR.getShapeUtil(shape)
       const centerA = util.getCenter(shape)
       const centerB = util.getCenter({ ...shape, size: asset.size })
@@ -3480,13 +3487,15 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         if (shape.assetId) {
           const asset = { ...this.document.assets[shape.assetId] }
           // If the asset is a GIF, then serialize an image
-          if (asset.src.toLowerCase().endsWith('gif')) {
-            asset.src = this.serializeImage(shape.id)
+          if (asset.type === TDAssetType.Image) {
+            if (asset.src.toLowerCase().endsWith('gif')) {
+              asset.src = this.serializeImage(shape.id)
+            }
           }
           // If the asset is an image, then serialize an image
-          if (shape.type === TDShapeType.Video) {
+          if (shape.type === TDShapeType.Video && asset.type === TDAssetType.Video) {
             asset.src = this.serializeVideo(shape.id)
-            asset.type = TDAssetType.Image
+            ;(asset as unknown as TDImageAsset).type = TDAssetType.Image
             // Cast shape to image shapes to properly display snapshots
             ;(shape as unknown as ImageShape).type = TDShapeType.Image
           }

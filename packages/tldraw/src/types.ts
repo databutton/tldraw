@@ -284,6 +284,8 @@ export enum TDShapeType {
   Group = 'group',
   Image = 'image',
   Video = 'video',
+  Plotly = 'plotly',
+  AgGrid = 'aggrid',
 }
 
 export enum Decoration {
@@ -362,6 +364,18 @@ export interface ImageShape extends TDBaseShape {
   assetId: string
 }
 
+export interface PlotlyShape extends TDBaseShape {
+  type: TDShapeType.Plotly
+  size: number[]
+  assetId: string
+}
+
+export interface AgGridShape extends TDBaseShape {
+  type: TDShapeType.AgGrid
+  size: number[]
+  assetId: string
+}
+
 export interface VideoShape extends TDBaseShape {
   type: TDShapeType.Video
   size: number[]
@@ -402,6 +416,8 @@ export type TDShape =
   | StickyShape
   | ImageShape
   | VideoShape
+  | PlotlyShape
+  | AgGridShape
 
 /* ------------------ Shape Styles ------------------ */
 
@@ -467,6 +483,8 @@ export type ShapeStyles = {
 export enum TDAssetType {
   Image = 'image',
   Video = 'video',
+  Plotly = 'plotly',
+  Dataframe = 'dataframe',
 }
 
 export interface TDImageAsset extends TLAsset {
@@ -481,7 +499,19 @@ export interface TDVideoAsset extends TLAsset {
   size: number[]
 }
 
-export type TDAsset = TDImageAsset | TDVideoAsset
+export interface TDPlotlyAsset extends TLAsset {
+  type: TDAssetType.Plotly
+  size: number[]
+}
+
+export interface TDDataframeAsset extends TLAsset {
+  type: TDAssetType.Dataframe
+  size: number[]
+}
+
+export type TDAsset = TDImageAsset | TDVideoAsset | TDPlotlyAsset | TDDataframeAsset
+
+export type TDAssetWithData = TDPlotlyAsset | TDDataframeAsset
 
 export type TDAssets = Record<string, TDAsset>
 
